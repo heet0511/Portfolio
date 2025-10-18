@@ -1,347 +1,290 @@
-import React, { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, FileDown, ArrowRight } from "lucide-react";
+import React, { useEffect } from "react";
+import { FileDown } from "lucide-react";
 
 export default function MatrixPortfolio() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Matrix rain background
+  // === MATRIX RAIN BACKGROUND ===
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvas = document.getElementById("matrixRain") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d")!;
+    const letters =
+      "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    const fontSize = 14;
+    let columns = Math.floor(window.innerWidth / fontSize);
+    const drops = Array(columns).fill(1);
 
-    const columnWidth = 14; // px per column
-    const cols = Math.floor(width / columnWidth);
-    const yPositions = Array(cols).fill(0);
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / fontSize);
+    };
 
-    const chars =
-      "アァカサタナハマヤャラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$+-*/=%'\\\"#&_(),.;:?!".split(
-        ""
-      );
+    resizeCanvas();
 
     const draw = () => {
-      // Semi-transparent black to create trail
-      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#00FF41";
+      ctx.font = `${fontSize}px monospace`;
 
-      ctx.fillStyle = "#29ff6a"; // phosphor green
-      ctx.font =
-        '15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
-
-      for (let i = 0; i < yPositions.length; i++) {
-        const text = chars[Math.floor(Math.random() * chars.length)];
-        const x = i * columnWidth;
-        const y = yPositions[i] * 18; // vertical step
-        ctx.fillText(text, x, y);
-
-        if (y > height && Math.random() > 0.975) {
-          yPositions[i] = 0;
-        } else {
-          yPositions[i] = yPositions[i] + 1;
-        }
-      }
+      drops.forEach((y, i) => {
+        const text = letters.charAt(Math.floor(Math.random() * letters.length));
+        ctx.fillText(text, i * fontSize, y * fontSize);
+        if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      });
     };
 
-    let raf: number;
-    const loop = () => {
-      draw();
-      raf = requestAnimationFrame(loop);
-    };
-    loop();
-
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener("resize", handleResize);
+    const interval = setInterval(draw, 33);
+    window.addEventListener("resize", resizeCanvas);
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", handleResize);
+      clearInterval(interval);
+      window.removeEventListener("resize", resizeCanvas);
     };
   }, []);
 
-  // Smooth-scroll helper for in-page hash links (works in sandboxes & SPAs)
-  const handleHashLink = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const href = (e.currentTarget.getAttribute("href") || "").trim();
-    if (href.startsWith("#")) {
-      e.preventDefault();
-      const el = document.querySelector(href);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
+  // === SMOOTH SCROLL FOR NAV LINKS ===
+  useEffect(() => {
+    const handleSmoothScroll = (e: MouseEvent) => {
+      const target = e.target as HTMLAnchorElement;
+      if (target.tagName === "A" && target.getAttribute("href")?.startsWith("#")) {
+        e.preventDefault();
+        const id = target.getAttribute("href")!;
+        const el = document.querySelector(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    document.addEventListener("click", handleSmoothScroll);
+    return () => document.removeEventListener("click", handleSmoothScroll);
+  }, []);
 
-  const glow = "drop-shadow-[0_0_12px_rgba(34,197,94,0.55)]"; // Tailwind arbitrary value
+  // === TYPING ANIMATION (CLI-style underscore cursor) ===
+  useEffect(() => {
+    const name = "Heet Joshi";
+    const element = document.getElementById("typedName");
+    if (!element) return;
 
-  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-    <section id={id} className="relative scroll-mt-24 py-16 lg:py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <h2 className={`font-mono text-2xl sm:text-3xl text-green-400 ${glow} mb-6 flex items-center gap-3`}>
-          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          {title}
-        </h2>
-        <div className="text-green-300/90">{children}</div>
-      </div>
-    </section>
-  );
+    let i = 0;
+    const typing = setInterval(() => {
+      if (i <= name.length) {
+        element.innerHTML =
+          name.slice(0, i) +
+          `<span class="text-green-400 animate-blink ml-1">_</span>`;
+        i++;
+      } else {
+        clearInterval(typing);
+        element.innerHTML =
+          name + `<span class="text-green-400 animate-blink ml-1">_</span>`;
+      }
+    }, 180);
 
-  const Card = ({ children }: { children: React.ReactNode }) => (
-    <div
-      className={`relative rounded-2xl border border-green-900/50 bg-black/40 p-5 sm:p-6 shadow-[0_0_30px_-10px_rgba(34,197,94,0.35)] ${glow}`}
-    >
-      {/* scanline + corner accents */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          background:
-            "repeating-linear-gradient(to bottom, rgba(41,255,106,0.03) 0px, rgba(41,255,106,0.03) 1px, transparent 2px, transparent 4px)",
-        }}
-      />
-      <div className="pointer-events-none absolute -inset-px rounded-2xl border border-green-500/10" aria-hidden="true" />
-      <div className="relative">{children}</div>
-    </div>
-  );
+    return () => clearInterval(typing);
+  }, []);
+
+  const glow = "drop-shadow-[0_0_12px_rgba(34,197,94,0.55)]";
 
   return (
-    <main className="relative min-h-screen bg-black text-green-300 font-mono selection:bg-green-500/20 selection:text-green-100">
-      {/* Canvas: Matrix rain */}
-      <canvas ref={canvasRef} className="fixed inset-0 -z-20 h-full w-full" />
+    <div className="relative min-h-screen w-full overflow-hidden bg-black text-green-400 font-mono">
+      {/* === MATRIX BACKGROUND === */}
+      <canvas id="matrixRain" className="fixed top-0 left-0 w-full h-full z-0"></canvas>
 
-      {/* Overlays: vignette, scanlines */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/40 via-transparent to-black/70" />
-      <div
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            "repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(41,255,106,0.05) 3px, rgba(0,0,0,0) 4px)",
-        }}
-      />
+      {/* === OVERLAY === */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] z-[1]" />
 
-      {/* Nav */}
-      <header className="sticky top-0 z-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <nav
-            className={`mt-4 flex items-center justify-between rounded-2xl border border-green-900/40 bg-black/50 px-4 py-3 backdrop-blur ${glow}`}
-          >
-            <a href="#home" className={`text-green-400 text-sm sm:text-base ${glow} tracking-wide`}>
-              HEET // PORTFOLIO
-            </a>
-            <ul className="flex items-center gap-5 text-xs sm:text-sm text-green-300">
-              <li>
-                <a className="hover:text-green-200 transition active:translate-y-[1px]" href="#projects" onClick={handleHashLink}>
-                  Projects
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-green-200 transition active:translate-y-[1px]" href="#about" onClick={handleHashLink}>
-                  About
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-green-200 transition active:translate-y-[1px]" href="#contact" onClick={handleHashLink}>
-                  Contact
-                </a>
-              </li>
-              <li>
-                <a
-                  href="Resume.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-3 py-1.5 text-green-200 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-                >
-                  <FileDown className="h-4 w-4" /> Resume
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      {/* === MAIN CONTENT === */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 py-20">
 
-      {/* Hero */}
-      <section id="home" className="relative py-20 md:py-28 lg:py-36">
-        <div className="mx-auto max-w-6xl px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-3xl"
-          >
-            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-semibold text-green-400 ${glow}`}>Heet Joshi</h1>
-            <p className="mt-3 text-green-300/90 text-base sm:text-lg leading-relaxed">
-              Software Engineer · UW–Madison — building backend systems, game mechanics, and tools that feel like magic.
-              This site runs on a live <span className="text-green-400">Matrix</span> rain renderer.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+        {/* === NAVBAR === */}
+        <header className="sticky top-0 z-20 w-full">
+          <div className="mx-auto max-w-6xl px-6">
+            <nav
+              className={`mt-4 flex items-center justify-between rounded-2xl border border-green-900/40 bg-black/50 px-6 py-3 backdrop-blur ${glow}`}
+            >
               <a
-                href="#projects"
-                onClick={handleHashLink}
-                className="group inline-flex items-center gap-2 rounded-xl border border-green-700/60 bg-black/40 px-4 py-2 text-green-200 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
+                href="#home"
+                className={`text-green-400 text-base sm:text-lg font-semibold tracking-wide ${glow}`}
               >
-                View Projects <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                HEET // PORTFOLIO
               </a>
-              <a
-                href="https://github.com/heet0511"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-4 py-2 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-              >
-                <Github className="h-4 w-4" /> GitHub
-              </a>
-              <a
-                href="https://www.linkedin.com/in/heetjoshi"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-4 py-2 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-              >
-                <Linkedin className="h-4 w-4" /> LinkedIn
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Projects */}
-      <Section id="projects" title="/projects">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Project 1 */}
-          <Card>
-            <div className="flex items-start justify-between">
-              <h3 className={`text-lg font-semibold text-green-300 ${glow}`}>Inventory Management System</h3>
-              <span className="rounded-md border border-green-700/60 px-2 py-0.5 text-xs text-green-200">Java · MySQL</span>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-green-300/90">
-              Real-time stock tracking, indexed queries, and caching to reduce search latency ~30%. Includes role-based auth and export.
-            </p>
-            <div className="mt-4 flex items-center gap-3 text-sm">
-              <a href="https://github.com/heet0511/inventory" target="_blank" rel="noreferrer" className="hover:text-green-100 underline underline-offset-4">
-                Code
-              </a>
-              <a href="#" className="hover:text-green-100 underline underline-offset-4">
-                Demo
-              </a>
-            </div>
-          </Card>
-
-          {/* Project 2 */}
-          <Card>
-            <div className="flex items-start justify-between">
-              <h3 className={`text-lg font-semibold text-green-300 ${glow}`}>Lunar Shadow — Unity 3D</h3>
-              <span className="rounded-md border border-green-700/60 px-2 py-0.5 text-xs text-green-200">C# · Unity</span>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-green-300/90">
-              Player state-switch mechanic (fragile/empowered), enemy AI with chase/fight loops, and polished camera & VFX. WebGL-ready.
-            </p>
-            <div className="mt-4 flex items-center gap-3 text-sm">
-              <a href="https://github.com/heet0511/lunar-shadow" target="_blank" rel="noreferrer" className="hover:text-green-100 underline underline-offset-4">
-                Code
-              </a>
-              <a href="#" className="hover:text-green-100 underline underline-offset-4">
-                Gameplay
-              </a>
-            </div>
-          </Card>
-
-          {/* Project 3 */}
-          <Card>
-            <div className="flex items-start justify-between">
-              <h3 className={`text-lg font-semibold text-green-300 ${glow}`}>Socket/Network Simulator</h3>
-              <span className="rounded-md border border-green-700/60 px-2 py-0.5 text-xs text-green-200">Python · Docker</span>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-green-300/90">
-              CLI-driven network lab: simulate unreliable links, latency, and packet loss; visualize retransmissions; REST API hooks.
-            </p>
-            <div className="mt-4 flex items-center gap-3 text-sm">
-              <a href="https://github.com/heet0511/net-sim" target="_blank" rel="noreferrer" className="hover:text-green-100 underline underline-offset-4">
-                Code
-              </a>
-              <a href="#" className="hover:text-green-100 underline underline-offset-4">
-                Docs
-              </a>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      {/* About */}
-      <Section id="about" title="/about">
-        <div className="grid gap-6 md:grid-cols-5">
-          <div className="md:col-span-3">
-            <Card>
-              <p className="text-sm leading-relaxed">
-                I'm a developer focused on backend systems, gameplay programming, and tooling. I like building fast search, clean APIs, and
-                real-time experiences. Currently studying Computer & Information Sciences at UW–Madison.
-              </p>
-            </Card>
-          </div>
-          <div className="md:col-span-2 space-y-6">
-            <Card>
-              <h4 className="text-sm font-semibold text-green-300">Tech</h4>
-              <ul className="mt-2 grid grid-cols-2 gap-2 text-xs text-green-200/90">
-                <li>Java</li>
-                <li>Python</li>
-                <li>C# / Unity</li>
-                <li>C</li>
-                <li>MySQL</li>
-                <li>Docker</li>
-                <li>REST APIs</li>
-                <li>React / Tailwind</li>
+              <ul className="flex items-center gap-8 text-sm text-green-300">
+                <li><a className="hover:text-green-200 transition" href="#projects">Projects</a></li>
+                <li><a className="hover:text-green-200 transition" href="#about">About</a></li>
+                <li><a className="hover:text-green-200 transition" href="#skills">Skills</a></li>
+                <li><a className="hover:text-green-200 transition" href="#contact">Contact</a></li>
+                <li>
+                  <a
+                    href="/Resume.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-3 py-1.5 text-green-200 hover:border-green-400 hover:text-green-100 transition"
+                  >
+                    <FileDown className="h-4 w-4" /> Resume
+                  </a>
+                </li>
               </ul>
-            </Card>
-            <Card>
-              <h4 className="text-sm font-semibold text-green-300">Currently</h4>
-              <p className="mt-2 text-xs text-green-200/90">
-                Polishing projects for internship season; exploring low-latency systems and shader/graphics basics.
-              </p>
-            </Card>
+            </nav>
           </div>
-        </div>
-      </Section>
+        </header>
 
-      {/* Contact */}
-      <Section id="contact" title="/contact">
-        <Card>
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-green-200/90">Open to SWE internships & collabs. Reach out and let's build.</p>
-            <div className="flex items-center gap-3">
-              <a
-                href="mailto:heet_joshi@yahoo.com"
-                className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-3 py-1.5 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-              >
-                <Mail className="h-4 w-4" /> Email
+        {/* === HERO SECTION === */}
+        <section id="home" className="max-w-4xl mx-auto mt-24">
+          <h2
+            id="typedName"
+            className="text-6xl md:text-7xl font-extrabold text-green-400 mb-6 drop-shadow-[0_0_12px_#00FF41]"
+          ></h2>
+          <p className="text-green-200 leading-relaxed max-w-3xl mx-auto mb-8">
+            Software Engineer · UW–Madison — building backend systems, game mechanics, and tools that feel like magic. This site runs on a live Matrix rain renderer.
+          </p>
+        </section>
+
+        {/* === PROJECTS === */}
+        <section id="projects" className="mt-32 max-w-5xl mx-auto">
+          <h3 className="text-3xl font-bold mb-6 text-green-400">/projects</h3>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { title: "Inventory Management System", desc: "Java + SQL backend app improving search efficiency by 30%.", link: "https://github.com/heet0511/inventory-system" },
+              { title: "Unity Game Prototype", desc: "C# Unity 3D project with dual-state player and AI enemies.", link: "https://github.com/heet0511/unity-prototype" },
+              { title: "Matrix Portfolio", desc: "This portfolio — crafted with React, Tailwind, and live Matrix rain.", link: "https://github.com/heet0511/Portfolio" },
+            ].map((proj) => (
+              <a key={proj.title} href={proj.link} target="_blank" rel="noopener noreferrer"
+                className="backdrop-blur-md bg-green-900/10 border border-green-500/30 rounded-2xl p-4 text-left hover:bg-green-500/10 transition shadow-[0_0_10px_#00FF41]/20">
+                <h4 className="text-xl font-semibold text-green-300 mb-2">{proj.title}</h4>
+                <p className="text-green-200 text-sm">{proj.desc}</p>
               </a>
-              <a
-                href="https://github.com/heet0511"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-3 py-1.5 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-              >
-                <Github className="h-4 w-4" /> GitHub
-              </a>
-              <a
-                href="https://www.linkedin.com/in/heetjoshi"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-green-700/60 px-3 py-1.5 hover:border-green-400 hover:text-green-100 transition focus-visible:outline-none focus-visible:ring focus-visible:ring-green-600/40 active:translate-y-[1px]"
-              >
-                <Linkedin className="h-4 w-4" /> LinkedIn
-              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* === ABOUT === */}
+        <section id="about" className="mt-32 max-w-5xl mx-auto text-left">
+          <h3 className="text-3xl font-bold mb-6 text-green-400">/about</h3>
+          <p className="text-green-200 leading-relaxed mb-8">
+            Software engineering student with strong backend and systems skills in Java, Python, and C. Experienced in building distributed backends, socket-based simulators, REST APIs, and full-stack dashboards.
+          </p>
+        </section>
+
+        {/* === SKILLS === */}
+        <section id="skills" className="mt-32 max-w-6xl mx-auto text-center">
+          <h3 className="text-3xl font-bold mb-10 text-green-400">/skills</h3>
+          <div className="relative overflow-hidden py-4">
+            <div className="marquee-track flex gap-8">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="flex gap-8 shrink-0">
+                  {[
+                    { name: "Java", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" },
+                    { name: "Python", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" },
+                    { name: "C", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg" },
+                    { name: "React", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" },
+                    { name: "Node.js", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" },
+                    { name: "Docker", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" },
+                    { name: "Unity", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original.svg" },
+                    { name: "Git", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" },
+                    { name: "MySQL", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg" },
+                    { name: "Linux", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" },
+                    { name: "TailwindCSS", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/tailwindcss/tailwindcss-original.svg" },
+
+                  ].map((skill) => (
+                    <div key={`${i}-${skill.name}`} className="flex flex-col items-center justify-center min-w-[130px] h-[130px] border border-green-500/30 bg-black/40 rounded-xl shadow-[0_0_12px_#00FF41]/20 hover:shadow-[0_0_20px_#00FF41] hover:scale-105 transition-transform duration-300 backdrop-blur-sm">
+                      <img src={skill.logo} alt={skill.name} className="w-10 h-10 mb-2" />
+                      <span className="text-green-300 font-medium">{skill.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
-        </Card>
-      </Section>
+        </section>
 
-      <footer className="relative pb-10">
-        <div className="mx-auto max-w-6xl px-6">
-          <p className="text-center text-xs text-green-600">
-            © {new Date().getFullYear()} Heet Joshi — built with React & Tailwind · Matrix mode engaged
-          </p>
-        </div>
-      </footer>
-    </main>
+        {/* === CONTACT === */}
+        <section id="contact" className="mt-32 mb-20 max-w-4xl mx-auto text-center">
+          <h3 className="text-3xl font-bold mb-6 text-green-400">/contact</h3>
+
+          <div className="inline-flex flex-wrap justify-center items-center gap-8 rounded-3xl border border-green-700/50 bg-black/40 px-8 py-4 shadow-[0_0_25px_#00FF41]/40 backdrop-blur-md">
+            {/* Email */}
+            <a href="mailto:heet_joshi@yahoo.com" className="flex items-center gap-3 rounded-2xl border border-green-600/50 px-6 py-2 hover:border-green-400 hover:text-green-100 transition text-green-200">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-6 h-6">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="M22 4 12 13 2 4" />
+              </svg>
+              <span className="font-mono text-lg">Email</span>
+            </a>
+
+            {/* GitHub */}
+            <a href="https://github.com/heet0511" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl border border-green-600/50 px-6 py-2 hover:border-green-400 hover:text-green-100 transition text-green-200">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303
+                  3.438 9.8 8.205 11.385.6.111.82-.261.82-.58
+                  0-.285-.011-1.04-.016-2.04-3.338.726-4.042-1.61-4.042-1.61
+                  -.546-1.387-1.333-1.757-1.333-1.757
+                  -1.09-.745.083-.729.083-.729
+                  1.205.085 1.84 1.236 1.84 1.236
+                  1.07 1.835 2.809 1.305 3.495.998
+                  .108-.775.419-1.305.762-1.606
+                  -2.665-.304-5.466-1.333-5.466-5.932
+                  0-1.31.469-2.381 1.236-3.221
+                  -.124-.303-.536-1.527.117-3.183
+                  0 0 1.008-.322 3.3 1.23a11.45 11.45 0 0 1 3.003-.403
+                  c1.018.005 2.044.137 3.003.403
+                  2.291-1.552 3.297-1.23 3.297-1.23
+                  .654 1.656.242 2.88.118 3.183
+                  .77.84 1.235 1.911 1.235 3.221
+                  0 4.61-2.804 5.625-5.476 5.922
+                  .43.372.823 1.103.823 2.222
+                  0 1.604-.015 2.896-.015 3.287
+                  0 .322.217.696.825.577
+                  C20.565 21.796 24 17.308 24 12
+                  24 5.37 18.63.297 12 .297z"/>
+              </svg>
+              <span className="font-mono text-lg">GitHub</span>
+            </a>
+
+            {/* LinkedIn */}
+            <a href="https://www.linkedin.com/in/heetjoshi" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl border border-green-600/50 px-6 py-2 hover:border-green-400 hover:text-green-100 transition text-green-200">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5
+                  5v14c0 2.761 2.239 5 5
+                  5h14c2.762 0 5-2.239
+                  5-5v-14c0-2.761-2.238-5-5-5zm-11.75
+                  20h-2.5v-11h2.5v11zm-1.25-12.268c-.828
+                  0-1.5-.676-1.5-1.506
+                  0-.831.672-1.506
+                  1.5-1.506.829
+                  0 1.5.675
+                  1.5 1.506 0
+                  .83-.671
+                  1.506-1.5
+                  1.506zm13
+                  12.268h-2.5v-5.604c0-1.336-.026-3.056-1.862-3.056-1.865
+                  0-2.151 1.455-2.151 2.957v5.703h-2.5v-11h2.4v1.507h.034c.334-.631
+                  1.152-1.298 2.373-1.298 2.538 0
+                  3.006 1.67 3.006
+                  3.841v6.95z"/>
+              </svg>
+              <span className="font-mono text-lg">LinkedIn</span>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      {/* === STYLES (Blink + Marquee) === */}
+      <style>{`
+        @keyframes blink {
+          0%, 50%, 100% { opacity: 1; }
+          25%, 75% { opacity: 0; }
+        }
+        .animate-blink {
+          animation: blink 2.5s step-end infinite;
+        }
+        @keyframes scroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .marquee-track {
+          display: flex;
+          width: max-content;
+          animation: scroll 20s linear infinite;
+        }
+      `}</style>
+    </div>
   );
 }
